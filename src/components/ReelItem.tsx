@@ -43,7 +43,8 @@ const ReelItem: React.FC<Props> = ({item, isActive}) => {
   }, [isActive]);
 
   const handleDoubleTap = () => {
-    setLiked(true);
+    setLiked(!liked);
+
     setShowHeart(true);
     Animated.sequence([
       Animated.timing(heartScale, {
@@ -64,6 +65,8 @@ const ReelItem: React.FC<Props> = ({item, isActive}) => {
     setBuffering(meta.isBuffering);
   };
 
+  const playPauseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   const handleTap = () => {
     setPaused(prev => !prev);
     setShowPlayPauseIcon(true);
@@ -72,16 +75,29 @@ const ReelItem: React.FC<Props> = ({item, isActive}) => {
       duration: 200,
       useNativeDriver: true,
     }).start(() => {
-      // Fade out icon after 1.2 seconds
-      setTimeout(() => {
+      if (playPauseTimeoutRef.current) {
+        clearTimeout(playPauseTimeoutRef.current);
+      }
+      playPauseTimeoutRef.current = setTimeout(() => {
         Animated.timing(playPauseOpacity, {
           toValue: 0,
           duration: 300,
           useNativeDriver: true,
-        }).start(() => setShowPlayPauseIcon(false));
+        }).start(() => {
+          setShowPlayPauseIcon(false);
+        });
       }, 1200);
     });
   };
+
+  useEffect(() => {
+    return () => {
+      // Clean up timeout when component unmounts
+      if (playPauseTimeoutRef.current) {
+        clearTimeout(playPauseTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const descriptionText =
     item.description && item.description.length > 0
@@ -269,8 +285,8 @@ const styles = StyleSheet.create({
   },
   heartContainer: {
     position: 'absolute',
-    top: '40%',
-    left: '40%',
+    top: '45%',
+    left: '42%',
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 99,
